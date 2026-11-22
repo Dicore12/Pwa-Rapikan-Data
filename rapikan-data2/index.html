@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rapikan Data</title>
+<meta name="description" content="Rapikan, urutkan, filter, kelompokkan, dan buat pivot dari file Excel — langsung di browser, tanpa upload ke server.">
+<meta name="theme-color" content="#0f766e">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><img src="icons/icon-192.png" alt="" width="28" height="28"><h1>Rapikan Data</h1></div>
+  <div class="top-actions">
+    <button id="btnInstall" class="btn ghost" hidden>Pasang aplikasi</button>
+    <button id="btnOpen" class="btn primary">Buka file</button>
+  </div>
+</header>
+<input type="file" id="fileInput" accept=".xlsx,.xls,.xlsm,.csv,.tsv,.txt,.ods" hidden>
+
+<main>
+  <section id="welcome" class="card drop">
+    <h2>Mulai dari file Excel Anda</h2>
+    <p>Tarik &amp; lepas file di sini, atau pilih dari perangkat. Data diproses di browser Anda sendiri — tidak ada yang dikirim ke server.</p>
+    <div class="row center">
+      <button id="btnOpen2" class="btn primary big">Pilih file (.xlsx, .xls, .csv)</button>
+      <button id="btnSample" class="btn big">Coba data contoh</button>
+    </div>
+  </section>
+
+  <div id="app" hidden>
+    <section class="card filebar">
+      <div class="file-info">
+        <strong id="fileName">—</strong>
+        <span id="statLine" class="muted"></span>
+      </div>
+      <div class="row wrap gap">
+        <label class="inline">Sheet
+          <select id="sheetSel"></select>
+        </label>
+        <label class="inline" id="blockWrap" hidden>Blok kolom
+          <select id="blockSel"></select>
+        </label>
+        <label class="inline">Baris judul kolom
+          <input id="headerRow" type="number" min="1" value="1" class="narrow">
+        </label>
+      </div>
+    </section>
+
+    <nav class="tabs" role="tablist">
+      <button class="tab-btn active" data-tab="data" role="tab">Data</button>
+      <button class="tab-btn" data-tab="tidy" role="tab">Rapikan</button>
+      <button class="tab-btn" data-tab="group" role="tab">Kelompok</button>
+      <button class="tab-btn" data-tab="pivot" role="tab">Pivot</button>
+    </nav>
+
+    <!-- DATA -->
+    <section id="tab-data" class="tab card">
+      <div class="row wrap gap">
+        <input id="search" type="search" placeholder="Cari di semua kolom…" class="grow">
+      </div>
+      <div class="block">
+        <h3>Filter</h3>
+        <div id="filters"></div>
+        <button id="addFilter" class="btn small">+ Tambah filter</button>
+      </div>
+      <div class="block">
+        <h3>Urutkan</h3>
+        <div id="sorts"></div>
+        <div class="row wrap gap">
+          <button id="addSort" class="btn small">+ Tambah urutan</button>
+          <button id="resetView" class="btn small ghost">Reset filter &amp; urutan</button>
+        </div>
+        <p class="hint">Tip: klik judul kolom pada tabel untuk mengurutkan cepat.</p>
+      </div>
+      <div id="viewMeta" class="muted meta"></div>
+      <div id="dataTable" class="tablewrap"></div>
+      <div class="row wrap gap">
+        <button class="btn" data-export="view" data-kind="xlsx">Unduh Excel</button>
+        <button class="btn" data-export="view" data-kind="csv">Unduh CSV</button>
+      </div>
+    </section>
+
+    <!-- RAPIKAN -->
+    <section id="tab-tidy" class="tab card" hidden>
+      <div class="auto-box">
+        <button id="btnAuto" class="btn primary big">⚡ Rapikan otomatis</button>
+        <p class="hint">Cocok untuk laporan hasil pivot/merge Excel: menghapus baris Total, mengisi sel gabungan yang kosong, mengubah teks tanggal &amp; angka, serta merapikan spasi — sekali klik.</p>
+      </div>
+      <p class="hint">Atau atur sendiri: centang yang diperlukan lalu tekan <b>Terapkan</b>. Hasilnya menjadi data utama untuk semua tab lain. Bisa diurungkan.</p>
+      <div class="checks">
+        <label><input type="checkbox" id="oSubtotals"> Hapus baris subtotal (baris yang ada tulisan "Total", "Subtotal", atau "Grand Total")</label>
+        <label><input type="checkbox" id="oHeaders" checked> Rapikan nama kolom (hapus spasi, beri nama kolom kosong, bedakan nama kembar)</label>
+        <label><input type="checkbox" id="oTrim" checked> Hapus spasi di awal &amp; akhir teks</label>
+        <label><input type="checkbox" id="oCollapse" checked> Ubah spasi ganda menjadi satu</label>
+        <label><input type="checkbox" id="oNbsp" checked> Ganti spasi tak terlihat (non-breaking space) dengan spasi biasa</label>
+        <label><input type="checkbox" id="oBreaks"> Hapus baris baru &amp; tab di dalam sel</label>
+        <label><input type="checkbox" id="oEmptyRows" checked> Hapus baris kosong</label>
+        <label><input type="checkbox" id="oEmptyCols" checked> Hapus kolom tanpa judul &amp; tanpa data</label>
+        <label><input type="checkbox" id="oToNumber" checked> Ubah teks angka menjadi angka (mis. <code>Rp 1.250.000</code> → 1250000)</label>
+      </div>
+      <div class="block">
+        <h3>Teks tanggal → tanggal sungguhan</h3>
+        <select id="oDates">
+          <option value="auto" selected>Otomatis (tebak urutan hari/bulan)</option>
+          <option value="dmy">Hari/Bulan/Tahun (31/12/2026)</option>
+          <option value="mdy">Bulan/Hari/Tahun (12/31/2026)</option>
+          <option value="">Biarkan sebagai teks</option>
+        </select>
+      </div>
+      <div class="block">
+        <h3>Huruf besar/kecil</h3>
+        <select id="oCase">
+          <option value="none">Biarkan apa adanya</option>
+          <option value="upper">HURUF BESAR</option>
+          <option value="lower">huruf kecil</option>
+          <option value="proper">Huruf Awal Kapital</option>
+        </select>
+        <p class="hint">Pilih kolom tertentu di bawah ini; jika tidak ada yang dipilih, berlaku untuk semua kolom teks.</p>
+        <div id="chips-caseCols" class="chips"></div>
+      </div>
+      <div class="block">
+        <h3>Isi sel kosong dari atas (untuk sel yang digabung/merge)</h3>
+        <div class="row wrap gap" style="margin-bottom:8px"><button id="btnSuggestFill" class="btn small">Pilih otomatis kolom yang perlu diisi</button></div>
+        <div id="chips-fillCols" class="chips"></div>
+      </div>
+      <div class="block">
+        <label class="check-line"><input type="checkbox" id="oDedupe"> Hapus baris duplikat (tidak peduli huruf besar/kecil)</label>
+        <p class="hint">Dianggap duplikat jika kolom yang dipilih sama; jika tidak ada yang dipilih, seluruh kolom dibandingkan.</p>
+        <div id="chips-dedupeCols" class="chips"></div>
+      </div>
+      <div class="row wrap gap">
+        <button id="btnTidy" class="btn primary">Terapkan</button>
+        <button id="btnUndo" class="btn" disabled>Urungkan</button>
+        <button id="btnRestore" class="btn ghost">Kembalikan data asli</button>
+      </div>
+      <div id="tidyReport" class="report" hidden></div>
+    </section>
+
+    <!-- KELOMPOK -->
+    <section id="tab-group" class="tab card" hidden>
+      <p class="hint">Ringkasan dihitung dari data yang sedang tampil di tab Data (setelah filter).</p>
+      <div class="block">
+        <h3>Kelompokkan berdasarkan</h3>
+        <div id="chips-groupCols" class="chips"></div>
+      </div>
+      <div class="block">
+        <h3>Hitung</h3>
+        <div id="aggs"></div>
+        <button id="addAgg" class="btn small">+ Tambah perhitungan</button>
+      </div>
+      <button id="btnGroup" class="btn primary">Buat ringkasan</button>
+      <div id="groupResult" class="result"></div>
+    </section>
+
+    <!-- PIVOT -->
+    <section id="tab-pivot" class="tab card" hidden>
+      <p class="hint">Pivot dihitung dari data yang sedang tampil di tab Data (setelah filter).</p>
+      <div class="block">
+        <h3>Baris</h3>
+        <div id="chips-pvRows" class="chips"></div>
+      </div>
+      <div class="grid2">
+        <label>Kolom
+          <select id="pvCol"></select>
+        </label>
+        <label>Nilai
+          <select id="pvVal"></select>
+        </label>
+        <label>Fungsi
+          <select id="pvFn">
+            <option value="sum">Jumlah (Sum)</option>
+            <option value="count">Hitung (Count)</option>
+            <option value="avg">Rata-rata (Average)</option>
+            <option value="min">Minimum</option>
+            <option value="max">Maksimum</option>
+            <option value="distinct">Hitung unik</option>
+            <option value="rows">Jumlah baris</option>
+          </select>
+        </label>
+        <label class="check-line pad-top"><input type="checkbox" id="pvTotals" checked> Tampilkan Total</label>
+      </div>
+      <button id="btnPivot" class="btn primary">Buat pivot</button>
+      <div id="pivotResult" class="result"></div>
+    </section>
+  </div>
+</main>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="lib/xlsx.full.min.js"></script>
+<script src="core.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
