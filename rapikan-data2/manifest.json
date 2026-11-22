@@ -3,7 +3,7 @@
   "short_name": "Rapikan",
   "description": "Rapikan, urutkan, filter, kelompokkan, dan buat pivot dari file Excel — offline.",
   "lang": "id",
-  "start_url": "./index.html",
+  "start_url": "/",
   "scope": "./",
   "display": "standalone",
   "orientation": "any", 
